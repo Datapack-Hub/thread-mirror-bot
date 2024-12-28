@@ -8,7 +8,7 @@ using Discord;
 public class AppConfig
 {
     public ulong[] HelpChannelIds { get; private set; }
-    public int MaxConnectionAttempts { get; private set; }
+    public int MaxConnectionAttempts { get; private set; } = 5;
 
     public static async Task<AppConfig> InitConfigAsync()
     {
@@ -53,10 +53,11 @@ public class AppConfig
 
                         var value = configLines[line].Replace('\r', ' ').Replace('\n', ' ').Trim();
                         anotherLine = value[^1] == ',';
+                        if (anotherLine) value = value[0..^1];
 
                         var castedValue = parseMethod == null ?
-                            Convert.ChangeType(value[0..^1], valueType) :
-                            parseMethod.Invoke(valueType, [value[0..^1]]);
+                            Convert.ChangeType(value, valueType) :
+                            parseMethod.Invoke(valueType, [value]);
 
                         list.Add(castedValue);
                     }

@@ -12,27 +12,35 @@ public class DataProcessor
     {
         foreach (ulong channelId in config.HelpChannelIds)
         {
-            var channel = await client.GetChannelAsync(channelId) as IThreadChannel;
+            var channel = await client.GetChannelAsync(channelId) as IForumChannel;
             if (channel == null)
             {
                 await Logger.Log($"The channel with id '{channelId}' is not a forum channel.", LogSeverity.Error);
                 continue;
             }
-            var threads = await channel.GetActiveThreadsAsync();
-            Console.WriteLine($"Thread NUM: {threads.Count}");
+            var allPosts = await channel.GetPublicArchivedThreadsAsync(limit: 10);
+            var posts = allPosts.Where(p =>
+                DateTime.Now.AddHours(-24).CompareTo(p.ArchiveTimestamp.DateTime) > 0
+            );
 
-            foreach (var thread in threads)
+            Console.WriteLine($"FORUM: {channel.Name}");
+            Console.WriteLine($"POSTCOUNT: {posts.Count()}");
+
+            foreach (var post in posts)
             {
-                var messages = await thread.GetMessagesAsync().FlattenAsync();
+                // var messages = await post.GetMessagesAsync().FlattenAsync();
 
-                Console.Write($"THREAD:  {thread.Name} - {(DateTime.Now - thread.ArchiveTimestamp.DateTime).CompareTo(TimeSpan.FromHours(24))}\n\n");
-                foreach (var msg in messages.Reverse())
-                {
-                    if (msg.Author.IsBot) continue;
-                    Console.WriteLine($"{msg.Author}:\n\t{msg.Content}");
-                }
-                Console.WriteLine("#############################################");
+                Console.WriteLine($"POST:  {post.Name}");
+                Console.WriteLine($"TIMESTAMP:  {post.ArchiveTimestamp.DateTime}");
+                // foreach (var msg in messages.Reverse())
+                // {
+                //     if (msg.Author.IsBot) continue;
+                //     Console.WriteLine($"{msg.Author}:\n\t{msg.Content}");
+                // }
+                Console.WriteLine("\n\n\n");
             }
         }
+
+        await Logger.Log("Data fetching complete", LogSeverity.Info);
     }
 }
