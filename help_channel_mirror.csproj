@@ -9,14 +9,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="3.16.0" />
 
     <Content Include="bot.cfg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
 
+    <PackageReference Include="Discord.Net" Version="3.16.0" />
     <PackageReference Include="Markdig" Version="0.39.1" />
+    
   </ItemGroup>
 
 </Project>
