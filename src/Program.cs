@@ -10,8 +10,6 @@ public class Program
     private readonly ConnectionGuard connectionGuard;
     private readonly DataProcessor processor;
 
-    private bool ready = false;
-
     private Program(
         DiscordSocketClient client,
         AppConfig config,
@@ -73,16 +71,16 @@ public class Program
             await client.StopAsync();
             await Logger.Log("Bot going into idle mode now.", LogSeverity.Info);
         };
-        await client.LoginAsync(TokenType.Bot, token);
-        await client.StartAsync();
+        if (token == null) await Logger.Log("No token provided. Bot is now in idle mode", LogSeverity.Info);
+        else
+        {
+            await client.LoginAsync(TokenType.Bot, token);
+            await client.StartAsync();
+        }
 
         var dataProcessor = new DataProcessor();
 
         var program = new Program(client, config, connectionGuard, dataProcessor);
-        client.Ready += () => {
-            program.ready = true;
-            return Task.CompletedTask;
-        };
         
         return program;
     }
@@ -141,7 +139,12 @@ public class Program
                     await Logger.Log("Bot in Idle mode now.", LogSeverity.Info);
                     break;
 
-                case "fetch" when ready:
+                case "fetch":
+                    if (Client.ConnectionState != ConnectionState.Connected)
+                    {
+                        await Logger.Log("Bot is not connected.", LogSeverity.Warning);
+                        break;
+                    }
                     await dataProcessor.FetchPosts(Client, Config);
                     break;
 
@@ -159,17 +162,17 @@ public class Program
     private const string helpMessage = @"
 Command List:
 
-help                            \x1b[90mShow this list.\x1b[0m
+help                            Show this list.
 
-clear                           \x1b[90mClear the console.\x1b[0m
+clear                           Clear the console.
 
-end                             \x1b[90mDisconnect and shut down the bot after a confirmation.\x1b[0m
+end                             Disconnect and shut down the bot after a confirmation.
 
-reload-config                   \x1b[90mReads and applies the latest settings from the config file.\x1b[0m
+reload-config                   Reads and applies the latest settings from the config file.
 
-reauth                          \x1b[90mReauthenticate the bot with a new token.\x1b[0m
+reauth                          Reauthenticate the bot with a new token.
 
-idle                            \x1b[90mLogs the bot out and sets it to idle mode.\x1b[0m
+idle                            Logs the bot out and sets it to idle mode.
 
-fetch                           \x1b[90mManually fetch help thread data.\x1b[0m";
+fetch                           Manually fetch help thread data.";
 }
