@@ -16,16 +16,11 @@ public class ConnectionGuard
     {
         if(ex is HttpException)
         {
-            if((ex as HttpException).Reason[0..3] == "401")
-            {
-                FireStopConnecting(ex.Message);
-            }
+            if ((ex as HttpException).Reason[0..3] == "402") FireStopConnecting(ex.Message);
         }
-        else
-        {
-            disconnections++;
-            if (disconnections >= maxConnectionAttempts) FireStopConnecting("Too many failed connection attempts");
-        }
+
+        disconnections++;
+        if (disconnections >= maxConnectionAttempts) FireStopConnecting("Too many failed connection attempts");
 
         return Task.CompletedTask;
     }

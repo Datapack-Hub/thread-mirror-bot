@@ -24,30 +24,15 @@ public class Program
 
     public static async Task Main(string[] args)
     {
-        string token;
-
-        if (args.Length == 1) token = args[0];
-        else
-        {
-            token = DemandToken();
-            if (token == null)
-            {
-                await Logger.Log("Aborting Startup Process", LogSeverity.Info);
-                return;
-            }
-        }
+        var token = args.Length == 0 ? DemandToken() : args[0];
+        
         var program = await InitProgramAsync(token);
-        if (program == null)
-        {
-            await Logger.Log("Invalid token, aborting startup process", LogSeverity.Error);
-            return;
-        }
         await program.ConsoleLoop();
     }
 
     private static string DemandToken()
     {
-        Console.Write("Please provide the new token for authentication.\nToken: ");
+        Console.Write("Please provide the new token for authentication or nothing to start without token.\nToken: ");
         var token = Console.ReadLine();
         
         if (token.Length == 0) token = null;
@@ -67,11 +52,12 @@ public class Program
         client.Connected += connectionGuard.OnConnect;
         connectionGuard.StopConnecting += async () =>
         {
+            await Logger.Log("Going into idle mode now.", LogSeverity.Info);
             await client.LogoutAsync();
             await client.StopAsync();
-            await Logger.Log("Bot going into idle mode now.", LogSeverity.Info);
         };
-        if (token == null) await Logger.Log("No token provided. Bot is now in idle mode", LogSeverity.Info);
+
+        if (token == null) await Logger.Log("No token provided. Bot will start in idle mode.", LogSeverity.Warning);
         else
         {
             await client.LoginAsync(TokenType.Bot, token);
@@ -89,9 +75,35 @@ public class Program
     {
         var dataProcessor = new DataProcessor();
 
+        // var buffer = new StringBuilder();
+
         while (true)
         {
+            #region Experimental Console
+            // var input = Console.ReadKey(true);
+
+            // switch(input.Key)
+            // {
+            //     case ConsoleKey.Enter:
+                    
+            //         break;
+                
+            //     case ConsoleKey.Backspace:
+            //         if (buffer.Length >= 1) buffer.Remove(buffer.Length - 1, 1);
+            //         Console.Write($"\x1b[{buffer.Length}D\x1b[K{buffer}");
+            //         break;
+
+            //     default:
+            //         if (buffer.Length == 128) continue;
+            //         if (input.KeyChar != ' ') buffer.Append(input.KeyChar);
+            //         Console.Write($"\x1b[{buffer.Length}D{buffer}");
+            //         break;
+            // }
+            #endregion
+
+
             var input = Console.ReadLine();
+            
             switch(input)
             {
                 case "help":
@@ -128,7 +140,8 @@ public class Program
                     await Client.StopAsync();
 
                     var token = DemandToken();
-                    
+                    if (token == null)
+            
                     await Client.LoginAsync(TokenType.Bot, token);
                     await Client.StartAsync();
                     break;
@@ -136,13 +149,13 @@ public class Program
                 case "idle":
                     await Client.LogoutAsync();
                     await Client.StopAsync();
-                    await Logger.Log("Bot in Idle mode now.", LogSeverity.Info);
+                    await Logger.Log("Now in idle mode", LogSeverity.Info);
                     break;
 
                 case "fetch":
                     if (Client.ConnectionState != ConnectionState.Connected)
                     {
-                        await Logger.Log("Bot is not connected.", LogSeverity.Warning);
+                        await Logger.Log("No connection yet", LogSeverity.Warning);
                         break;
                     }
                     await dataProcessor.FetchPosts(Client, Config);
@@ -155,7 +168,7 @@ public class Program
         }
 
         exit:
-            await Logger.Log("Console will close in 10 seconds", LogSeverity.Info);
+            await Logger.Log("Console will close in 10 seconds.", LogSeverity.Info);
             await Task.Delay(1000 * 10);
     }
 

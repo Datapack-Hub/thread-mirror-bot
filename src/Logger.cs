@@ -6,21 +6,17 @@ public class Logger
 {
     public static Task Log(LogMessage msg)
     {
-        switch (msg.Severity)
+        var message = msg.Severity switch
         {
-            case LogSeverity.Critical:
-            case LogSeverity.Error:
-                Console.Write($"\x1b[31m{msg.ToString()}\x1b[0m\n");
-                break;
+            LogSeverity.Critical or
+            LogSeverity.Error => $"\x1b[31m{msg.ToString()}\x1b[0m\n",
 
-            case LogSeverity.Warning:
-                Console.Write($"\x1b[33m{msg.ToString()}\x1b[0m\n");
-                break;
+            LogSeverity.Warning => $"\x1b[33m{msg.ToString()}\x1b[0m\n",
+            
+            _ => $"\x1b[90m{msg.ToString()}\x1b[0m\n"
+        };
 
-            default:
-                Console.Write($"\x1b[90m{msg.ToString()}\x1b[0m\n");
-                break;
-        }
+        Console.WriteLine(message);
         return Task.CompletedTask;
     }
 
