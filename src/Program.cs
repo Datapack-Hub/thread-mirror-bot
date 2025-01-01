@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -8,7 +9,7 @@ public class Program
     private DiscordSocketClient Client { get; set; }
     private AppConfig Config { get; set; }
     private readonly ConnectionGuard connectionGuard;
-    private readonly DataProcessor processor;
+    private readonly DataProcessor dataProcessor;
 
     private Program(
         DiscordSocketClient client,
@@ -19,15 +20,29 @@ public class Program
         Client = client;
         Config = config;
         this.connectionGuard = connectionGuard;
-        processor = dataProcessor;
+        this.dataProcessor = dataProcessor;
     }
 
     public static async Task Main(string[] args)
     {
-        var token = args.Length == 0 ? DemandToken() : args[0];
-        
+        string token;
+
+        if (File.Exists(args[0])) token = File.ReadAllText(args[0]);
+        else
+        {
+            try
+            {
+                TokenUtils.ValidateToken(TokenType.Bot, args[0]);
+                token = args[0];
+            }
+            catch
+            {
+                token = args.Length == 0 ? DemandToken() : args[0];
+            }
+        }
+
         var program = await InitProgramAsync(token);
-        await program.ConsoleLoop();
+        await program.RunAsync();
     }
 
     private static string DemandToken()
@@ -35,18 +50,16 @@ public class Program
         Console.Write("Please provide the new token for authentication or nothing to start without token.\nToken: ");
         var token = Console.ReadLine();
         
-        if (token.Length == 0) token = null;
-        
-        return token;
+        return token.Length == 0 ? null : token;
     }
 
     private static async Task<Program> InitProgramAsync(string token)
     {
         var config = await AppConfig.InitConfigAsync();
 
-        var connectionGuard = new ConnectionGuard(config);
+        ConnectionGuard connectionGuard = new(config);
 
-        var client = new DiscordSocketClient();
+        DiscordSocketClient client = new();
         client.Log += Logger.Log;
         client.Disconnected += connectionGuard.OnDisconnect;
         client.Connected += connectionGuard.OnConnect;
@@ -64,47 +77,62 @@ public class Program
             await client.StartAsync();
         }
 
-        var dataProcessor = new DataProcessor();
+        DataProcessor dataProcessor = new();
 
-        var program = new Program(client, config, connectionGuard, dataProcessor);
-        
+        Program program = new(client, config, connectionGuard, dataProcessor);
+
         return program;
     }
 
+    /// <summary>
+    /// Starts the Main loop and background tasks of the program
+    /// </summary>
+    /// <returns></returns>
+    private async Task RunAsync()
+    {
+        await ConsoleLoop();
+    } 
+
     private async Task ConsoleLoop()
     {
-        var dataProcessor = new DataProcessor();
-
-        // var buffer = new StringBuilder();
-
         while (true)
         {
             #region Experimental Console
-            // var input = Console.ReadKey(true);
-
-            // switch(input.Key)
+            // string input = "";
+            // while (true)
             // {
-            //     case ConsoleKey.Enter:
-                    
-            //         break;
-                
-            //     case ConsoleKey.Backspace:
-            //         if (buffer.Length >= 1) buffer.Remove(buffer.Length - 1, 1);
-            //         Console.Write($"\x1b[{buffer.Length}D\x1b[K{buffer}");
-            //         break;
+            //     var keyInfo = Console.ReadKey();
 
-            //     default:
-            //         if (buffer.Length == 128) continue;
-            //         if (input.KeyChar != ' ') buffer.Append(input.KeyChar);
-            //         Console.Write($"\x1b[{buffer.Length}D{buffer}");
-            //         break;
+            //     switch(keyInfo.Key)
+            //     {
+            //         case ConsoleKey.Enter:
+            //             goto break_input_loop;
+            //             break;
+                    
+            //         case ConsoleKey.Backspace:
+            //             if (input.Length < 1) break;
+            //             input = input[0..^1];
+            //             Console.Write("\b\b");
+            //             break;
+
+            //         case ConsoleKey.LeftArrow:
+            //             Console.
+            //             break;
+
+            //         case ConsoleKey.RightArrow:
+
+            //         default:
+            //             input += keyInfo.KeyChar;
+            //             // Console.Write(keyInfo.KeyChar);
+            //             break;
+            //     }
             // }
+            // break_input_loop: {}
             #endregion
 
-
             var input = Console.ReadLine();
-            
-            switch(input)
+
+            switch (input)
             {
                 case "help":
                     Console.WriteLine(helpMessage);
@@ -124,7 +152,7 @@ public class Program
                         Console.Write("\x1b[2F\x1b[0J");
                         await Client.LogoutAsync();
                         await Client.StopAsync();
-                        goto exit;
+                        goto exit_console_loop;
                     }
                     else Console.Write("\x1b[2F\x1b[0J\x1b[34mEnding Aborted\x1b[0m\n");
                     break;
@@ -162,12 +190,12 @@ public class Program
                     break;
 
                 default:
-                    Console.Write("\x1b[2F\x1b[0J\x1b[31mInvalid input\x1b[0m\n");
+                    Console.Write($"\x1b[1F\x1b[K\x1b[31m'{input}' is not a valid command.\x1b[0m\n");
                     break;
             }
         }
 
-        exit:
+        exit_console_loop:
             await Logger.Log("Console will close in 10 seconds.", LogSeverity.Info);
             await Task.Delay(1000 * 10);
     }

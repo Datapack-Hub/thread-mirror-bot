@@ -37,5 +37,5 @@ public class ConnectionGuard
         StopConnecting();
     }
 
-    public event Func<Task> StopConnecting; 
+    public event Action StopConnecting;
 }

@@ -1,4 +1,4 @@
 bin/
 obj/
-.vscode/
+settings.json
 token.txt

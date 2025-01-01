@@ -7,29 +7,37 @@ using Discord;
 
 public class AppConfig
 {
-    public ulong[] HelpChannelIds { get; private set; }
     public int MaxConnectionAttempts { get; private set; } = 5;
+    public ulong[] HelpChannelIds { get; private set; } = [];
+    public ulong[] ResolvedTagIds { get; private set; } = [];
 
     public static async Task<AppConfig> InitConfigAsync()
     {
+        await Logger.Log("Starting config initialisation.", LogSeverity.Info);
         var configPath = Path.Combine(AppContext.BaseDirectory, "bot.cfg");
         var configLines = await File.ReadAllLinesAsync(configPath);
 
-        var config = new AppConfig();
+        AppConfig config = new();
 
         for (int line = 0; line < configLines.Length; line++)
         {
             var ln = configLines[line];
 
-            if (ln.Length == 0 || char.IsWhiteSpace(ln[0])) continue;
+            if (ln.Trim().Length == 0 || ln.Trim()[0] == '#') continue;
             else
             {
                 var n = ln.IndexOfAny(['=', ':']);
                 if (n == -1) continue;
                 
                 var key = ln[0..n].Trim();
-                var valueType = config.GetType().GetProperty(key).PropertyType;
-                if (valueType.IsArray) valueType = valueType.GetElementType(); 
+
+                var property = config.GetType().GetProperty(key);
+                if (property == null)
+                {
+                    await Logger.Log($"'{key}' in line '{line + 1}' is not a valid confiuration variable. Skipping it.", LogSeverity.Warning);
+                    continue;
+                }
+                var valueType = property.PropertyType.IsArray ? property.PropertyType.GetElementType() : property.PropertyType;
                 var parseMethod = valueType.GetMethod("Parse", [typeof(string)]);
 
                 if (ln[n] == '=') // Parse single values fields
@@ -52,6 +60,7 @@ public class AppConfig
                         line++;
 
                         var value = configLines[line].Replace('\r', ' ').Replace('\n', ' ').Trim();
+                        if (value[0] == '#') continue;
                         anotherLine = value[^1] == ',';
                         if (anotherLine) value = value[0..^1];
 
@@ -64,13 +73,11 @@ public class AppConfig
                     
                     var arr = new ArrayList(list).ToArray(valueType);
                     config.GetType().GetProperty(key).SetValue(config, arr);
-
-                    
                 }
             }
         }
 
-        await Logger.Log("Config init complete", LogSeverity.Info);
+        await Logger.Log("Config initialisation completed.", LogSeverity.Info);
 
         return config;
     }
