@@ -26,31 +26,54 @@ public class Program
     public static async Task Main(string[] args)
     {
         string token;
-
-        if (File.Exists(args[0])) token = File.ReadAllText(args[0]);
-        else
-        {
-            try
-            {
-                TokenUtils.ValidateToken(TokenType.Bot, args[0]);
-                token = args[0];
-            }
-            catch
-            {
-                token = args.Length == 0 ? DemandToken() : args[0];
-            }
-        }
+        
+        token = args.Length == 1 ? CheckToken(args[0]) : DemandToken();
 
         var program = await InitProgramAsync(token);
         await program.RunAsync();
     }
 
+    /// <summary>
+    /// Checks if the given "token" is a file path to a token file, a real token or an invalid token.
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns>A valid token or null if no token (empty token string) is provided</returns>
+    private static string CheckToken(string input)
+    {
+        string token = null;
+
+        if (File.Exists(input)) token = CheckToken(File.ReadAllText(input));
+        else
+        {
+            try
+            {
+                TokenUtils.ValidateToken(TokenType.Bot, input);
+                token = input;
+            }
+            catch
+            {
+                if (input.Length == 0) token = null;
+                else
+                {
+                    Console.Write("\x1b[31mInput token invalid!\x1b[0m\n");
+                    DemandToken();
+                }
+            }
+        }
+
+        return token;
+    }
+
+    /// <summary>
+    /// Requests an input from the user. Either a token, the path to a token text file, or nothing.
+    /// </summary>
+    /// <returns>User input</returns>
     private static string DemandToken()
     {
-        Console.Write("Please provide the new token for authentication or nothing to start without token.\nToken: ");
-        var token = Console.ReadLine();
-        
-        return token.Length == 0 ? null : token;
+        Console.Write("Please provide a token for authentication or leave empty to go into idle mode without connecting.\nToken: ");
+        var input = Console.ReadLine();
+
+        return CheckToken(input);
     }
 
     private static async Task<Program> InitProgramAsync(string token)
@@ -65,12 +88,12 @@ public class Program
         client.Connected += connectionGuard.OnConnect;
         connectionGuard.StopConnecting += async () =>
         {
-            await Logger.Log("Going into idle mode now.", LogSeverity.Info);
+            Logger.Log("Going into idle mode now.", LogSeverity.Info);
             await client.LogoutAsync();
             await client.StopAsync();
         };
 
-        if (token == null) await Logger.Log("No token provided. Bot will start in idle mode.", LogSeverity.Warning);
+        if (token == null) Logger.Log("No token provided. Bot will start in idle mode.", LogSeverity.Warning);
         else
         {
             await client.LoginAsync(TokenType.Bot, token);
@@ -85,15 +108,20 @@ public class Program
     }
 
     /// <summary>
-    /// Starts the Main loop and background tasks of the program
+    /// Starts the console loop and background tasks of the program
     /// </summary>
     /// <returns></returns>
     private async Task RunAsync()
     {
-        await ConsoleLoop();
+        Task[] tasks =
+        [
+            ConsoleLoopAsync()
+        ];
+
+        await Task.WhenAll(tasks);
     } 
 
-    private async Task ConsoleLoop()
+    private async Task ConsoleLoopAsync()
     {
         while (true)
         {
@@ -132,72 +160,141 @@ public class Program
 
             var input = Console.ReadLine();
 
-            switch (input)
-            {
-                case "help":
-                    Console.WriteLine(helpMessage);
+            var continueLoop = await EvaluateInputAsync(input);
+            if (!continueLoop) break;
+        }
+            Logger.Log("Bot shutting down.", LogSeverity.Info);
+            await Task.Delay(1000 * 1);
+    }
+
+    private async Task<bool> EvaluateInputAsync(string input)
+    {
+        string[] processedInput = input.Split(' ');
+
+        switch (processedInput[0])
+        {
+            case "help":
+                if (processedInput.Length > 1)
+                {
+                    Logger.Log("Too many arguments for this command!", LogSeverity.Error);
                     break;
+                }
+                Console.WriteLine(helpMessage);
+                break;
 
-                case "clear":
-                    Console.Clear();
+            case "clear":
+                if (processedInput.Length > 1)
+                {
+                    Logger.Log("Too many arguments for this command!", LogSeverity.Error);
+                        break;
+                }
+                Console.Clear();
+                break;
+
+            case "end":
+                if (processedInput.Length > 1)
+                {
+                    Logger.Log("Too many arguments for this command!", LogSeverity.Error);
                     break;
+                }
 
-                case "end":
-                    Console.Write("\x1b[41mDisconnect and shut down the bot?\x1b[0m\n\"y\"=Yes, else=No: ");
+                Console.Write("\x1b[41mDisconnect and shut down the bot?\x1b[0m\n\"y\"=Yes, else=No: ");
 
-                    var confirmation = Console.ReadLine();
+                var confirmation = Console.ReadLine();
 
-                    if (confirmation == "y")
-                    {
-                        Console.Write("\x1b[2F\x1b[0J");
-                        await Client.LogoutAsync();
-                        await Client.StopAsync();
-                        goto exit_console_loop;
-                    }
-                    else Console.Write("\x1b[2F\x1b[0J\x1b[34mEnding Aborted\x1b[0m\n");
-                    break;
-
-                case "reload-config":
-                    Config = await AppConfig.InitConfigAsync();
-                    connectionGuard.Update(Config);
-                    await Logger.Log("Config reload complete", LogSeverity.Info);
-                    break;
-
-                case "reauth":
+                if (confirmation == "y")
+                {
+                    Console.Write("\x1b[2F\x1b[0J");
                     await Client.LogoutAsync();
                     await Client.StopAsync();
+                    return false;
+                }
+                else Console.Write("\x1b[2F\x1b[0J\x1b[34mEnding Aborted\x1b[0m\n");
+                break;
 
-                    var token = DemandToken();
+            case "reload-config":
+                if (processedInput.Length > 1)
+                {
+                    Logger.Log("Too many arguments for this command!", LogSeverity.Error);
+                    break;
+                }
+
+                Config = await AppConfig.InitConfigAsync();
+                connectionGuard.Update(Config);
+                Logger.Log("Config reload complete", LogSeverity.Info);
+                break;
+
+            case "reauth":
+                if (processedInput.Length > 2)
+                {
+                    Logger.Log("Too many arguments for this command!", LogSeverity.Error);
+                    break;
+                }
+
+                await Client.LogoutAsync();
+                await Client.StopAsync();
+
+                string token;
+
+                if (processedInput.Length == 2) token = CheckToken(processedInput[1]);
+                else
+                {
+                    token = DemandToken();
                     if (token == null)
-            
-                    await Client.LoginAsync(TokenType.Bot, token);
-                    await Client.StartAsync();
-                    break;
-
-                case "idle":
-                    await Client.LogoutAsync();
-                    await Client.StopAsync();
-                    await Logger.Log("Now in idle mode", LogSeverity.Info);
-                    break;
-
-                case "fetch":
-                    if (Client.ConnectionState != ConnectionState.Connected)
                     {
-                        await Logger.Log("No connection yet", LogSeverity.Warning);
+                        Logger.Log("No token provided. Bot now in idle mode.", LogSeverity.Info);
                         break;
                     }
-                    await dataProcessor.FetchPosts(Client, Config);
-                    break;
+                }
 
-                default:
-                    Console.Write($"\x1b[1F\x1b[K\x1b[31m'{input}' is not a valid command.\x1b[0m\n");
+                await Client.LoginAsync(TokenType.Bot, token);
+                await Client.StartAsync();
+                break;
+
+            case "idle":
+                if (processedInput.Length > 1)
+                {
+                    Logger.Log("Too many arguments for this command!", LogSeverity.Error);
                     break;
-            }
+                }
+
+                await Client.LogoutAsync();
+                await Client.StopAsync();
+                Logger.Log("Now in idle mode", LogSeverity.Info);
+                break;
+
+            case "update":
+                if (processedInput.Length > 1)
+                {
+                    Logger.Log("Too many arguments for this command!", LogSeverity.Error);
+                    break;
+                }
+
+                if (Client.ConnectionState != ConnectionState.Connected)
+                {
+                    Logger.Log("No connection yet", LogSeverity.Warning);
+                    break;
+                }
+                
+                _ = dataProcessor.UpdateData(Client, Config);
+                break;
+            
+            case "stop":
+                if (processedInput.Length > 2)
+                {
+                    Logger.Log("Too many arguments for this command!", LogSeverity.Error);
+                    break;
+                }
+                
+                TaskTracker.CancelTask(processedInput[1]);
+                break;
+
+            default:
+                Console.Write($"\x1b[1F\x1b[K\x1b[31m'{input}' is not a valid command.\x1b[0m\n");
+                break;
         }
 
-        exit_console_loop:
-            await Logger.Log("Console will close in 10 seconds.", LogSeverity.Info);
-            await Task.Delay(1000 * 10);
+        return true;
     }
 
     private const string helpMessage = @"
@@ -215,5 +312,8 @@ reauth                          Reauthenticate the bot with a new token.
 
 idle                            Logs the bot out and sets it to idle mode.
 
-fetch                           Manually fetch help thread data.";
+update                          Manually updates the help forum data.
+
+stop <task name>                Stops the task with the given name.
+";
 }

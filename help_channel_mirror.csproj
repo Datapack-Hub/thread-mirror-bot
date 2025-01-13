@@ -16,7 +16,6 @@
     </Content>
 
     <PackageReference Include="Discord.Net" Version="3.16.0" />
-    <PackageReference Include="Markdig" Version="0.39.1" />
     
   </ItemGroup>
 

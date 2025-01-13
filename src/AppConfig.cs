@@ -13,7 +13,7 @@ public class AppConfig
 
     public static async Task<AppConfig> InitConfigAsync()
     {
-        await Logger.Log("Starting config initialisation.", LogSeverity.Info);
+        Logger.Log("Starting config initialisation.", LogSeverity.Info);
         var configPath = Path.Combine(AppContext.BaseDirectory, "bot.cfg");
         var configLines = await File.ReadAllLinesAsync(configPath);
 
@@ -34,7 +34,7 @@ public class AppConfig
                 var property = config.GetType().GetProperty(key);
                 if (property == null)
                 {
-                    await Logger.Log($"'{key}' in line '{line + 1}' is not a valid confiuration variable. Skipping it.", LogSeverity.Warning);
+                    Logger.Log($"'{key}' in line '{line + 1}' is not a valid confiuration variable. Skipping it.", LogSeverity.Warning);
                     continue;
                 }
                 var valueType = property.PropertyType.IsArray ? property.PropertyType.GetElementType() : property.PropertyType;
@@ -77,7 +77,7 @@ public class AppConfig
             }
         }
 
-        await Logger.Log("Config initialisation completed.", LogSeverity.Info);
+        Logger.Log("Config initialisation completed.", LogSeverity.Info);
 
         return config;
     }
