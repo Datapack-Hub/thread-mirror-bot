@@ -33,7 +33,7 @@ public class ConnectionGuard
 
     private void FireStopConnecting(string logMsg)
     {
-        Logger.Log(logMsg, LogSeverity.Warning);
+        _ = Logger.Log(logMsg, LogSeverity.Warning);
         StopConnecting();
     }
 

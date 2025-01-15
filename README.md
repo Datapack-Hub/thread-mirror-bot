@@ -8,13 +8,13 @@ After starting the program, you can use write `help` in the console to get a lis
 For Highlighting and debugging, download the `C# Dev Kit` extension pack.
 No further setup of the environment is required.
 <br>
-Providing the bot token can  be done in any of the following 3 ways:
-- Create a `token.txt` and provide the path as commandline argument.
-- Provide the token as commandline argument directly.
-- If none of the above is done the bot will ask to input a token manually.
+Providing the bot token can be done in any of the following 3 ways:
+- Create a file called `bot_token` in the `secrets` folder with the token inside.
+- Provide the token or path to the token file as commandline argument directly. Only used if there is no `bot_token` file.
+- If none of the above is done the bot will ask to input a token or path to the token file manually.
 
-### Debugging:<br>
-When debugging, it is recommended to use the first method to provide the token as the `launch.json` is set up to find the `token.txt` file in the base directory and pass it as commandline argument.
+After the bot connects to the discord api, it will try to find a github auth token in a file called `github_auth` which should also be in the `secrets` folder. If it doesn't find one, it asks to input the token manually.
+The github token is optional and only needed if generated data should be uploaded to a specific repository.
 
 ### Testing:<br>
 For quick tests in between run

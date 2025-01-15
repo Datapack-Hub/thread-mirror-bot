@@ -20,7 +20,7 @@ public static class TaskTracker
     {
         CancellationTokenSource source = new();
         cancellationTokens.Add(taskName, source);
-        Logger.Log($"New Task with the name \"{taskName}\" started.", LogSeverity.Info);
+        _ = Logger.Log($"New Task with the name \"{taskName}\" started.", LogSeverity.Info);
         return source.Token;
     }
 }

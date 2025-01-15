@@ -4,7 +4,7 @@ using Discord;
 
 public static class Logger
 {
-    private static void FormatAndLogMessage(LogMessage msg, bool overwriteLastMessage = false)
+    private static async Task FormatAndLogMessage(LogMessage msg, bool overwriteLastMessage = false)
     {
         var message = msg.Severity switch
         {
@@ -18,15 +18,12 @@ public static class Logger
 
         if (overwriteLastMessage) Console.WriteLine($"\x1b[s\x1b[1F\x1b[2K{message}\x1b[s"); //BROKEN but idc rn
         else Console.WriteLine(message);
+        await Task.CompletedTask;
     }
 
-    public static Task Log(LogMessage msg)
-    {
-        FormatAndLogMessage(msg);
-        return Task.CompletedTask;
-    }
+    public static async Task Log(LogMessage msg) => await FormatAndLogMessage(msg);
 
-    public static void Log(string msg, LogSeverity severity, bool overwriteLastMessage = false) => FormatAndLogMessage(new LogMessage(severity, "Bot", msg), overwriteLastMessage);
+    public static async Task Log(string msg, LogSeverity severity, bool overwriteLastMessage = false) => await FormatAndLogMessage(new LogMessage(severity, "Bot", msg), overwriteLastMessage);
 
     public static void RemoveLastLogMessage() => Console.Write("\x1b[1F\x1b[2K");
 }

@@ -12,13 +12,19 @@ using System.Diagnostics;
 
 public class DataProcessor
 {
+    private readonly string dataPath = Path.Join(AppContext.BaseDirectory, "data");
     public bool isFetchingData = false;
+
+    public DataProcessor()
+    {     
+        if (!Directory.Exists(dataPath)) Directory.CreateDirectory(dataPath);
+    }
 
     public async Task UpdateData(DiscordSocketClient client, AppConfig config)
     {
         if (isFetchingData)
         {
-            Logger.Log("Already fetching data. Wait till it finishes.", LogSeverity.Warning);
+            _ = Logger.Log("Already fetching data. Wait till it finishes.", LogSeverity.Warning);
             return;
         }
 
@@ -28,7 +34,7 @@ public class DataProcessor
 
         try
         {
-            Logger.Log("Fetching data.", LogSeverity.Info);
+            _ = Logger.Log("Fetching data.", LogSeverity.Info);
             
             foreach (ulong channelId in config.HelpChannelIds)
             {
@@ -37,30 +43,32 @@ public class DataProcessor
                 var channel = await client.GetChannelAsync(channelId) as IForumChannel;
                 if (channel == null)
                 {
-                    Logger.Log($"The channel with id '{channelId}' is not a forum channel.", LogSeverity.Warning);
+                    _ = Logger.Log($"The channel with id '{channelId}' is not a forum channel.", LogSeverity.Warning);
                     continue;
                 }
 
-                Logger.Log($"Starting fetching posts from: {channel.Name}", LogSeverity.Info);
+                _ = Logger.Log($"Starting fetching posts from: {channel.Name}", LogSeverity.Info);
 
                 var threads = await GetAllForumPosts(channel, config, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
+
+                await Task.Delay(1000);
 
                 var processedThreads = await ProcessThreads(channel, threads, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var jsonText = JsonSerializer.Serialize(processedThreads);
-                using (StreamWriter file = new StreamWriter(Path.Join(AppContext.BaseDirectory, $"{channelId}.json")))
+                using (StreamWriter file = new StreamWriter(Path.Join(dataPath, $"{channelId}.json")))
                 {
                     await file.WriteAsync(jsonText);
                 }
             }
 
-            Logger.Log("Data fetching complete.", LogSeverity.Info);
+            _ = Logger.Log("Data fetching complete.", LogSeverity.Info);
         }
         catch (OperationCanceledException)
         {
-            Logger.Log("Data fetching canceled.", LogSeverity.Info);
+            _ = Logger.Log("Data fetching canceled.", LogSeverity.Info);
         }
         finally
         {
@@ -73,7 +81,7 @@ public class DataProcessor
         const int batchSize = 50;
         Stopwatch sw = new();
         List<HelpThread> processedThreads = new();
-        Logger.Log("0 posts processed.", LogSeverity.Info);
+        _ = Logger.Log("0 posts processed.", LogSeverity.Info);
 
         for (int i = 0; i < threads.Count(); i += batchSize)
         {
@@ -97,14 +105,14 @@ public class DataProcessor
             var processedTasks = await Task.WhenAll(threadTasks);
 
             processedThreads.AddRange(processedTasks);
-            Logger.Log($"{processedThreads.Count} posts processed.", LogSeverity.Info, true);
+            _ = Logger.Log($"{processedThreads.Count} posts processed.", LogSeverity.Info, true);
 
             sw.Stop();
             var millisecondDelay = 1010 - sw.Elapsed.Milliseconds;
             await Task.Delay(Math.Max(0, millisecondDelay));
         }
 
-        Logger.Log($"Finished processing posts.", LogSeverity.Info);
+        _ = Logger.Log($"Finished processing posts.", LogSeverity.Info);
 
         return processedThreads;
     }
@@ -119,7 +127,7 @@ public class DataProcessor
     {
         var before = DateTimeOffset.Now.AddHours(-24);
         List<IThreadChannel> threadList = new();
-        Logger.Log("0 posts fetched.", LogSeverity.Info);
+        _ = Logger.Log("0 posts fetched.", LogSeverity.Info);
 
         while (true)
         {
@@ -136,11 +144,10 @@ public class DataProcessor
             before = threads.Last().ArchiveTimestamp.DateTime;
 
             threadList.AddRange(threads);
-            Logger.Log($"{threadList.Count} posts fetched.", LogSeverity.Info, true);
-            break;
+            _ = Logger.Log($"{threadList.Count} posts fetched.", LogSeverity.Info, true);
         }
 
-        Logger.Log($"Finished fetching posts.", LogSeverity.Info);
+        _ = Logger.Log($"Finished fetching posts.", LogSeverity.Info);
         return threadList;
     }
 

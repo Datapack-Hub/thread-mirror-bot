@@ -1,4 +1,6 @@
+.VSCodeCounter
 bin/
 obj/
 settings.json
-token.txt
+bot_token*
+github_auth*
