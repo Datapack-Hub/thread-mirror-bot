@@ -10,6 +10,9 @@ public class AppConfig
     public int MaxConnectionAttempts { get; private set; } = 5;
     public ulong[] HelpChannelIds { get; private set; } = [];
     public ulong[] ResolvedTagIds { get; private set; } = [];
+    public string RepositoryOwner { get; private set; } = null;
+    public string RepositoryName { get; private set; } = null;
+    public string RepositoryBranch { get; private set; } = null;
 
     public static async Task<AppConfig> InitConfigAsync()
     {

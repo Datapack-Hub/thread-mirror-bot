@@ -34,8 +34,6 @@ public class DataProcessor
 
         try
         {
-            _ = Logger.Log("Fetching data.", LogSeverity.Info);
-            
             foreach (ulong channelId in config.HelpChannelIds)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -52,7 +50,7 @@ public class DataProcessor
                 var threads = await GetAllForumPosts(channel, config, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
 
-                await Task.Delay(1000);
+                await Task.Delay(1050);
 
                 var processedThreads = await ProcessThreads(channel, threads, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
@@ -81,6 +79,7 @@ public class DataProcessor
         const int batchSize = 50;
         Stopwatch sw = new();
         List<HelpThread> processedThreads = new();
+        _ = Logger.Log("Starting post processing.", LogSeverity.Info);
         _ = Logger.Log("0 posts processed.", LogSeverity.Info);
 
         for (int i = 0; i < threads.Count(); i += batchSize)

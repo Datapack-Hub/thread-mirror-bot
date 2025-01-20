@@ -3,22 +3,24 @@ using System.IO;
 using System.Threading.Tasks;
 using Discord;
 using Octokit;
+using FileMode = Octokit.FileMode;
 
 public class Github
 {
-    private readonly string authDataPath = Path.Join("secrets", "github_auth");
+    private readonly string secretsDir = Path.Join(AppContext.BaseDirectory, "secrets");
+    private readonly string pushDataDir = Path.Join(AppContext.BaseDirectory, "data");
     private GitHubClient githubClient = new(new ProductHeaderValue("datapack-hub-help-thread-mirror"));
     private bool hasValidCredentials = false;
 
     public static async Task<Github> InitGithubAsync()
     {
         Github github = new();
-        await github.TryFindCredentials();
+        await github.ParseTokenSource();
 
         return github;
     }
 
-    public void DeAuthenticate()
+    public void DeAuthenticateCurrentUser()
     {
         githubClient.Credentials = null;
         hasValidCredentials = false;
@@ -26,58 +28,132 @@ public class Github
         _ = Logger.Log("Removed github authentication.", LogSeverity.Info);
     }
 
-    // Changes Credentials to the new user
-    public async Task Authenticate(string token = "")
+    public void AuthenticateNewUser(string tokenSource = "github_auth") => _ = ParseTokenSource(tokenSource);
+
+    /// <summary>
+    /// Parse the token source (raw token or file path) and set credentials if valid or do nothing if it's an empty string.
+    /// </summary>
+    /// <param name="source"></param>
+    private async Task ParseTokenSource(string source = "github_auth")
     {
-        if (token.Length == 0) await TryFindCredentials();
-        else await CheckCredentials(new Credentials(token));
+        string src = source;
+
+        while (!hasValidCredentials)
+        {
+            if (File.Exists(Path.Join(secretsDir, src))) src = await TryFindToken(src);
+
+            await CheckToken(src);
+
+            if (!hasValidCredentials) src = DemandCredentials();
+        }
     }
 
-    public async Task TryFindCredentials()
+    /// <summary>
+    /// Tries to find a token file and read it
+    /// </summary>
+    /// <param name="fileName"></param>
+    /// <returns>token from the file</returns>
+    private async Task<string> TryFindToken(string fileName)
     {
-        Credentials credentials;
-        if(File.Exists(authDataPath))
-        {
-            var token = (await File.ReadAllTextAsync(authDataPath)).Trim();
-            credentials = new(token);
-        }
-        else credentials = await DemandCredentials();
-
-        await CheckCredentials(credentials);
-
-        if (hasValidCredentials) _ = Logger.Log("Set github credentials.", Discord.LogSeverity.Info);
-        else _ = Logger.Log("No valid github credentials available.", Discord.LogSeverity.Info);
+        var token = await File.ReadAllTextAsync(Path.Join(secretsDir, fileName));
+        return token.Trim();
     }
 
-    public async Task<Credentials> CheckCredentials(Credentials credentials)
+    private async Task CheckToken(string token)
     {
-        if (credentials == null)
-        {
-            hasValidCredentials = false;
-            return null;
-        }
-
-        githubClient.Credentials = credentials;
+        githubClient.Credentials = new Credentials(token);
         
         try
         {
             await githubClient.User.Current();
             hasValidCredentials = true;
-            return credentials;
         }
         catch
         {
             hasValidCredentials = false;
-            return await DemandCredentials();
         }
     }
 
-    public async Task<Credentials> DemandCredentials()
+    public string DemandCredentials()
     {
         Console.Write("Please provide an auth token for Github authentication or leave empty if you don't want to upload generated data to a remote repository.\nToken: ");
-        var token = Console.ReadLine();
-        if (token.Length == 0) return null;
+        var token = Console.ReadLine().Trim();
         
-        return await CheckCredentials(new Credentials(token));
+        return token;
+    }
+
+    public async Task PushData(AppConfig config)
+    {
+        if (!hasValidCredentials)
+        {
+            _ = Logger.Log("Cannot push data to github. No valid credentials.", LogSeverity.Warning);
+            return;
+        }
+
+        if (config.RepositoryOwner == null)
+        {
+            _ = Logger.Log("RepositoryOwner configuration variable is not set.", LogSeverity.Warning);
+            return;
+        }
+
+        if (config.RepositoryName == null)
+        {
+            _ = Logger.Log("RepositoryName configuration variable is not set.", LogSeverity.Warning);
+            return;
+        }
+
+        if (config.RepositoryBranch == null)
+        {
+            _ = Logger.Log("RepositoryBranch configuration variable is not set.", LogSeverity.Warning);
+            return;
+        }
+
+        _ = Logger.Log("Starting data push.", LogSeverity.Info);
+
+        Reference branchRef;
+        try
+        {
+            branchRef = await githubClient.Git.Reference.Get(config.RepositoryOwner, config.RepositoryName, $"heads/{config.RepositoryBranch}");
+        }
+        catch
+        {
+            _ = Logger.Log("Repository or branch not found.", LogSeverity.Warning);
+            return;
+        }
+        var latestCommitSha = branchRef.Object.Sha;
+
+        var latestCommit = await githubClient.Git.Commit.Get(config.RepositoryOwner, config.RepositoryName, latestCommitSha);
+
+        var filePaths = Directory.GetFiles(pushDataDir);
+
+        var newTree = new NewTree { BaseTree = latestCommit.Tree.Sha };
+
+        foreach (var path in filePaths)
+        {
+            var newBlob = new NewBlob
+            {
+                Content = await File.ReadAllTextAsync(path),
+                Encoding = EncodingType.Utf8
+            };
+
+            var blob = await githubClient.Git.Blob.Create(config.RepositoryOwner, config.RepositoryName, newBlob);
+
+            newTree.Tree.Add(new NewTreeItem 
+            {
+                Path = path,
+                Mode = FileMode.File,
+                Type = TreeType.Blob,
+                Sha = blob.Sha
+            });
+        }
+
+        var tree = await githubClient.Git.Tree.Create(config.RepositoryOwner, config.RepositoryName, newTree);
+
+        var newCommit = new NewCommit("updating help channel posts", tree.Sha, latestCommitSha);
+        var commit = await githubClient.Git.Commit.Create(config.RepositoryOwner, config.RepositoryName, newCommit);
+
+        await githubClient.Git.Reference.Update(config.RepositoryOwner, config.RepositoryName, $"heads/{config.RepositoryBranch}", new ReferenceUpdate(commit.Sha));
+
+        _ = Logger.Log("Code pushed to github successfully", LogSeverity.Info);
     }
 }

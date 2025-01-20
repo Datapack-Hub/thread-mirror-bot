@@ -2,6 +2,11 @@ using System;
 using System.Threading.Tasks;
 using Discord;
 
+
+// TODO
+// Add logging queue
+
+
 public static class Logger
 {
     private static async Task FormatAndLogMessage(LogMessage msg, bool overwriteLastMessage = false)

@@ -30,7 +30,7 @@ public class Program
     {
         string token;
 
-        token = args.Length > 0 ? await tokenManager.CheckToken(args[0]) : await tokenManager.TryFindToken();
+        token = args.Length > 0 ? await tokenManager.ParseTokenSource(args[0]) : await tokenManager.ParseTokenSource();
 
         var program = await InitProgramAsync(token);
         await program.RunAsync();
@@ -52,7 +52,7 @@ public class Program
             await client.Disconnect();
         };
         
-        if (token == null) _ = Logger.Log("No token provided. Bot will start in idle mode.", LogSeverity.Warning);
+        if (token == "") _ = Logger.Log("No token provided. Bot will start in idle mode.", LogSeverity.Warning);
         else await client.TryConnect(tokenManager, token);
 
         var github = await Github.InitGithubAsync();
@@ -208,9 +208,28 @@ public class Program
                     _ = Logger.Log("Too many arguments for this command!", LogSeverity.Error);
                     break;
                 }
-                cmd.Update(client, dataProcessor, config);
+                _ = cmd.Update(client, dataProcessor,config);
                 break;
-            
+
+            case "push":
+                if (processedInput.Length > 1)
+                {
+                    _ = Logger.Log("Too many arguments for this command!", LogSeverity.Error);
+                    break;
+                }
+                _ = cmd.Push(github, config);
+                break;
+
+
+            case "update-push":
+                if (processedInput.Length > 1)
+                {
+                    _ = Logger.Log("Too many arguments for this command!", LogSeverity.Error);
+                    break;
+                }
+                _ = cmd.UpdatePush(client, dataProcessor, github, config);
+                break;
+
             case "stop-task":
                 if (processedInput.Length > 2)
                 {

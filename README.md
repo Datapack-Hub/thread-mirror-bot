@@ -13,7 +13,7 @@ Providing the bot token can be done in any of the following 3 ways:
 - Provide the token or path to the token file as commandline argument directly. Only used if there is no `bot_token` file.
 - If none of the above is done the bot will ask to input a token or path to the token file manually.
 
-After the bot connects to the discord api, it will try to find a github auth token in a file called `github_auth` which should also be in the `secrets` folder. If it doesn't find one, it asks to input the token manually.
+After the bot connects to the discord api, it will try to find a github auth token in a file called `github_auth` which also have to be in the `secrets` folder. If it doesn't find one, it asks to input the token manually.
 The github token is optional and only needed if generated data should be uploaded to a specific repository.
 
 ### Testing:<br>

@@ -18,11 +18,15 @@ reload-config                   Reads and applies the latest settings from the c
 
 reauth dc|gh [<token>]          Reauthenticate the bot (dc) with a new discord bot token | (gh) with new github credentials.
 
-rm-github-auth                  Removes github credentials and stops uploading generated data.
+github-deauth                   Removes github credentials and stops uploading generated data.
 
 idle                            Logs the bot out and sets it to idle mode.
 
 update                          Manually updates the help forum data.
+
+push                            Manually pushes help forum data to github.
+
+update-push                     Manually updates and pushes help forum data
 
 stop-task <task name>           Stops the task with the given name.
 ");
@@ -62,10 +66,11 @@ stop-task <task name>           Stops the task with the given name.
     public async Task Reauth(string[] input, Github github)
     {
         var token = input.Length == 3 ? input[2] : "";
-        await github.Authenticate(token);
+        github.AuthenticateNewUser(token);
+        await Task.CompletedTask;
     }
 
-    public void GithubDeauthenticate(Github github) => github.DeAuthenticate();
+    public void GithubDeauthenticate(Github github) => github.DeAuthenticateCurrentUser();
 
     public async Task Idle(DiscordSocketClient client)
     {
@@ -73,7 +78,7 @@ stop-task <task name>           Stops the task with the given name.
         _ = Logger.Log("Now in idle mode", LogSeverity.Info);
     }
 
-    public void Update(DiscordSocketClient client, DataProcessor dataProcessor, AppConfig config)
+    public async Task Update(DiscordSocketClient client, DataProcessor dataProcessor, AppConfig config)
     {
         if (client.ConnectionState != ConnectionState.Connected)
         {
@@ -81,7 +86,24 @@ stop-task <task name>           Stops the task with the given name.
             return;
         }
 
-        _ = dataProcessor.UpdateData(client, config);
+        await dataProcessor.UpdateData(client, config);
+    }
+
+    public async Task Push(Github github, AppConfig config)
+    {
+        await github.PushData(config);
+    }
+
+    public async Task UpdatePush(DiscordSocketClient client, DataProcessor dataProcessor, Github github, AppConfig config)
+    {
+        if (client.ConnectionState != ConnectionState.Connected)
+        {
+            _ = Logger.Log("No connection yet", LogSeverity.Warning);
+            return;
+        }
+
+        await dataProcessor.UpdateData(client, config);
+        await github.PushData(config);
     }
 
     public void StopTask(string[] input) => TaskTracker.CancelTask(input[1]);

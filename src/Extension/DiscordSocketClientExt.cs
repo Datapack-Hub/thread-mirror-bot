@@ -4,21 +4,16 @@ using Discord.WebSocket;
 
 public static class DiscordSocketClientExt
 {
-    public static async Task TryConnect(this DiscordSocketClient client, DiscordTokenmanager tokenManager, string token = "")
+    public static async Task TryConnect(this DiscordSocketClient client, DiscordTokenmanager tokenManager, string tokenSource = "")
     {
-        string tkn;
+        string token = await tokenManager.ParseTokenSource(tokenSource);
 
-        if (token.Length > 0) tkn = await tokenManager.CheckToken(token);
-        else
+        if (token == "")
         {
-            tkn = await tokenManager.TryFindToken();
-            if (token == null)
-            {
-                _ = Logger.Log("No token provided. Bot now in idle mode.", LogSeverity.Info);
-                return;
-            }
+            _ = Logger.Log("No token provided. Bot now in idle mode.", LogSeverity.Info);
+            return;
         }
-
+        
         var botFinishConnecting = new TaskCompletionSource();
         Task CompleteBotFinishConnecting()
         {
@@ -27,7 +22,7 @@ public static class DiscordSocketClientExt
         }
         client.Ready += CompleteBotFinishConnecting;
 
-        await client.LoginAsync(TokenType.Bot, tkn);
+        await client.LoginAsync(TokenType.Bot, token);
         await client.StartAsync();
         await botFinishConnecting.Task;
         client.Ready -= CompleteBotFinishConnecting;
