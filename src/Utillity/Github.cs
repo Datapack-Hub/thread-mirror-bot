@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Octokit;
@@ -140,7 +141,7 @@ public class Github
 
             newTree.Tree.Add(new NewTreeItem 
             {
-                Path = path,
+                Path = $"{config.RepositoryTargetPath}/{path.Split(Path.DirectorySeparatorChar)[^1]}",
                 Mode = FileMode.File,
                 Type = TreeType.Blob,
                 Sha = blob.Sha

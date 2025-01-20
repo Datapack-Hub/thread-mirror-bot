@@ -13,6 +13,7 @@ public class AppConfig
     public string RepositoryOwner { get; private set; } = null;
     public string RepositoryName { get; private set; } = null;
     public string RepositoryBranch { get; private set; } = null;
+    public string RepositoryTargetPath { get; private set; } = "";
 
     public static async Task<AppConfig> InitConfigAsync()
     {

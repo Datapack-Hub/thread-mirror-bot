@@ -93,6 +93,7 @@ public class DataProcessor
 
                 return new HelpThread
                 (
+                    thread.Id,
                     thread.Name,
                     message != null ? message.CleanContent : "No description", // CombineOwnerMessageSequence(thread.OwnerId, message),
                     CombineAppliedTags(channel, thread),

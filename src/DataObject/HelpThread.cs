@@ -1,15 +1,20 @@
-
 using System.Text.Json.Serialization;
 
 public struct HelpThread
 {
-    public HelpThread(string name, string description, string tags, string url)
+    public HelpThread(ulong id, string name, string description, string tags, string url)
     {
+        Id = id;
         Name = name;
         Description = description;
         Tags = tags;
         Url = url;
     }
+
+    /// <summary>
+    /// Post id
+    /// </summary>
+    [JsonInclude] public ulong Id;
 
     /// <summary>
     /// Title of the help post
