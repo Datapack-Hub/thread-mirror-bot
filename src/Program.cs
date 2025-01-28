@@ -7,20 +7,17 @@ public class Program
 {
     private static readonly DiscordTokenmanager tokenManager = new();
     private readonly DiscordSocketClient client;
-    private AppConfig config;
     private readonly ConnectionGuard connectionGuard;
     private readonly Github github;
     private readonly DataProcessor dataProcessor;
 
     private Program(
         DiscordSocketClient client,
-        AppConfig config,
         ConnectionGuard connectionGuard,
         DataProcessor dataProcessor,
         Github github)
     {
         this.client = client;
-        this.config = config;
         this.connectionGuard = connectionGuard;
         this.dataProcessor = dataProcessor;
         this.github = github;
@@ -38,9 +35,9 @@ public class Program
 
     private static async Task<Program> InitProgramAsync(string token)
     {
-        var config = await AppConfig.InitConfigAsync();
+        await AppConfig.InitNewConfigAsync();
 
-        ConnectionGuard connectionGuard = new(config);
+        ConnectionGuard connectionGuard = new();
 
         DiscordSocketClient client = new();
         client.Log += Logger.Log;
@@ -59,7 +56,7 @@ public class Program
 
         DataProcessor dataProcessor = new();
 
-        Program program = new(client, config, connectionGuard, dataProcessor, github);
+        Program program = new(client, connectionGuard, dataProcessor, github);
 
         return program;
     }
@@ -208,7 +205,7 @@ public class Program
                     _ = Logger.Log("Too many arguments for this command!", LogSeverity.Error);
                     break;
                 }
-                _ = cmd.Update(client, dataProcessor,config);
+                _ = cmd.Update(client, dataProcessor);
                 break;
 
             case "push":
@@ -217,7 +214,7 @@ public class Program
                     _ = Logger.Log("Too many arguments for this command!", LogSeverity.Error);
                     break;
                 }
-                _ = cmd.Push(github, config);
+                _ = cmd.Push(github);
                 break;
 
 
@@ -227,7 +224,7 @@ public class Program
                     _ = Logger.Log("Too many arguments for this command!", LogSeverity.Error);
                     break;
                 }
-                _ = cmd.UpdatePush(client, dataProcessor, github, config);
+                _ = cmd.UpdatePush(client, dataProcessor, github);
                 break;
 
             case "stop-task":

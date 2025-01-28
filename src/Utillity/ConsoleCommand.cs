@@ -52,8 +52,8 @@ stop-task <task name>           Stops the task with the given name.
 
     public async Task ReloadConfig(ConnectionGuard connectionGuard)
     {
-        var config = await AppConfig.InitConfigAsync();
-        connectionGuard.Update(config);
+        await AppConfig.InitNewConfigAsync();
+        connectionGuard.Update();
         _ = Logger.Log("Config reload complete", LogSeverity.Info);
     }
 
@@ -78,7 +78,7 @@ stop-task <task name>           Stops the task with the given name.
         _ = Logger.Log("Now in idle mode", LogSeverity.Info);
     }
 
-    public async Task Update(DiscordSocketClient client, DataProcessor dataProcessor, AppConfig config)
+    public async Task Update(DiscordSocketClient client, DataProcessor dataProcessor)
     {
         if (client.ConnectionState != ConnectionState.Connected)
         {
@@ -86,15 +86,15 @@ stop-task <task name>           Stops the task with the given name.
             return;
         }
 
-        await dataProcessor.UpdateData(client, config);
+        await dataProcessor.UpdateData(client);
     }
 
-    public async Task Push(Github github, AppConfig config)
+    public async Task Push(Github github)
     {
-        await github.PushData(config);
+        await github.PushData();
     }
 
-    public async Task UpdatePush(DiscordSocketClient client, DataProcessor dataProcessor, Github github, AppConfig config)
+    public async Task UpdatePush(DiscordSocketClient client, DataProcessor dataProcessor, Github github)
     {
         if (client.ConnectionState != ConnectionState.Connected)
         {
@@ -102,8 +102,8 @@ stop-task <task name>           Stops the task with the given name.
             return;
         }
 
-        await dataProcessor.UpdateData(client, config);
-        await github.PushData(config);
+        await dataProcessor.UpdateData(client);
+        await github.PushData();
     }
 
     public void StopTask(string[] input) => TaskTracker.CancelTask(input[1]);

@@ -8,9 +8,9 @@ public class ConnectionGuard
     private int maxConnectionAttempts;
     private int disconnections = 0;
 
-    public ConnectionGuard(AppConfig config) => maxConnectionAttempts = config.MaxConnectionAttempts;
+    public ConnectionGuard() => Update();
 
-    public void Update(AppConfig config) => maxConnectionAttempts = config.MaxConnectionAttempts;
+    public void Update() => maxConnectionAttempts = AppConfig.Data.MaxConnectionAttempts;
 
     public Task OnDisconnect(Exception ex)
     {

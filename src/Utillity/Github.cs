@@ -83,7 +83,7 @@ public class Github
         return token;
     }
 
-    public async Task PushData(AppConfig config)
+    public async Task PushData()
     {
         if (!hasValidCredentials)
         {
@@ -91,19 +91,19 @@ public class Github
             return;
         }
 
-        if (config.RepositoryOwner == null)
+        if (AppConfig.Data.RepositoryOwner == null)
         {
             _ = Logger.Log("RepositoryOwner configuration variable is not set.", LogSeverity.Warning);
             return;
         }
 
-        if (config.RepositoryName == null)
+        if (AppConfig.Data.RepositoryName == null)
         {
             _ = Logger.Log("RepositoryName configuration variable is not set.", LogSeverity.Warning);
             return;
         }
 
-        if (config.RepositoryBranch == null)
+        if (AppConfig.Data.RepositoryBranch == null)
         {
             _ = Logger.Log("RepositoryBranch configuration variable is not set.", LogSeverity.Warning);
             return;
@@ -114,7 +114,7 @@ public class Github
         Reference branchRef;
         try
         {
-            branchRef = await githubClient.Git.Reference.Get(config.RepositoryOwner, config.RepositoryName, $"heads/{config.RepositoryBranch}");
+            branchRef = await githubClient.Git.Reference.Get(AppConfig.Data.RepositoryOwner, AppConfig.Data.RepositoryName, $"heads/{AppConfig.Data.RepositoryBranch}");
         }
         catch
         {
@@ -123,7 +123,7 @@ public class Github
         }
         var latestCommitSha = branchRef.Object.Sha;
 
-        var latestCommit = await githubClient.Git.Commit.Get(config.RepositoryOwner, config.RepositoryName, latestCommitSha);
+        var latestCommit = await githubClient.Git.Commit.Get(AppConfig.Data.RepositoryOwner, AppConfig.Data.RepositoryName, latestCommitSha);
 
         var filePaths = Directory.GetFiles(pushDataDir);
 
@@ -137,23 +137,23 @@ public class Github
                 Encoding = EncodingType.Utf8
             };
 
-            var blob = await githubClient.Git.Blob.Create(config.RepositoryOwner, config.RepositoryName, newBlob);
+            var blob = await githubClient.Git.Blob.Create(AppConfig.Data.RepositoryOwner, AppConfig.Data.RepositoryName, newBlob);
 
             newTree.Tree.Add(new NewTreeItem 
             {
-                Path = $"{config.RepositoryTargetPath}/{path.Split(Path.DirectorySeparatorChar)[^1]}",
+                Path = $"{AppConfig.Data.RepositoryTargetPath}/{path.Split(Path.DirectorySeparatorChar)[^1]}",
                 Mode = FileMode.File,
                 Type = TreeType.Blob,
                 Sha = blob.Sha
             });
         }
 
-        var tree = await githubClient.Git.Tree.Create(config.RepositoryOwner, config.RepositoryName, newTree);
+        var tree = await githubClient.Git.Tree.Create(AppConfig.Data.RepositoryOwner, AppConfig.Data.RepositoryName, newTree);
 
         var newCommit = new NewCommit("updating help channel posts", tree.Sha, latestCommitSha);
-        var commit = await githubClient.Git.Commit.Create(config.RepositoryOwner, config.RepositoryName, newCommit);
+        var commit = await githubClient.Git.Commit.Create(AppConfig.Data.RepositoryOwner, AppConfig.Data.RepositoryName, newCommit);
 
-        await githubClient.Git.Reference.Update(config.RepositoryOwner, config.RepositoryName, $"heads/{config.RepositoryBranch}", new ReferenceUpdate(commit.Sha));
+        await githubClient.Git.Reference.Update(AppConfig.Data.RepositoryOwner, AppConfig.Data.RepositoryName, $"heads/{AppConfig.Data.RepositoryBranch}", new ReferenceUpdate(commit.Sha));
 
         _ = Logger.Log("Code pushed to github successfully", LogSeverity.Info);
     }

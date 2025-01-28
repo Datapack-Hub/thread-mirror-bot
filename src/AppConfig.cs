@@ -7,6 +7,7 @@ using Discord;
 
 public class AppConfig
 {
+    public static AppConfig Data { get; private set; }
     public int MaxConnectionAttempts { get; private set; } = 5;
     public ulong[] HelpChannelIds { get; private set; } = [];
     public ulong[] ResolvedTagIds { get; private set; } = [];
@@ -15,7 +16,7 @@ public class AppConfig
     public string RepositoryBranch { get; private set; } = null;
     public string RepositoryTargetPath { get; private set; } = "";
 
-    public static async Task<AppConfig> InitConfigAsync()
+    public static async Task InitNewConfigAsync()
     {
         _ = Logger.Log("Starting config initialisation.", LogSeverity.Info);
         var configPath = Path.Combine(AppContext.BaseDirectory, "bot.cfg");
@@ -83,6 +84,6 @@ public class AppConfig
 
         _ = Logger.Log("Config initialisation completed.", LogSeverity.Info);
 
-        return config;
+        Data = config;
     }
 }

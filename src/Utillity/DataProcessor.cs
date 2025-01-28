@@ -20,7 +20,7 @@ public class DataProcessor
         if (!Directory.Exists(dataPath)) Directory.CreateDirectory(dataPath);
     }
 
-    public async Task UpdateData(DiscordSocketClient client, AppConfig config)
+    public async Task UpdateData(DiscordSocketClient client)
     {
         if (isFetchingData)
         {
@@ -34,7 +34,7 @@ public class DataProcessor
 
         try
         {
-            foreach (ulong channelId in config.HelpChannelIds)
+            foreach (ulong channelId in AppConfig.Data.HelpChannelIds)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -47,7 +47,7 @@ public class DataProcessor
 
                 _ = Logger.Log($"Starting fetching posts from: {channel.Name}", LogSeverity.Info);
 
-                var threads = await GetAllForumPosts(channel, config, cancellationToken);
+                var threads = await GetAllForumPosts(channel, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
 
                 await Task.Delay(1050);
@@ -123,7 +123,7 @@ public class DataProcessor
     /// <param name="channel"></param>
     /// <param name="config"></param>
     /// <returns>A list of all old enough and non-test threads in the channel</returns>
-    private async Task<IEnumerable<IThreadChannel>> GetAllForumPosts(IForumChannel channel, AppConfig config, CancellationToken cancellationToken)
+    private async Task<IEnumerable<IThreadChannel>> GetAllForumPosts(IForumChannel channel, CancellationToken cancellationToken)
     {
         var before = DateTimeOffset.Now.AddHours(-24);
         List<IThreadChannel> threadList = new();
@@ -136,7 +136,7 @@ public class DataProcessor
             var allThreads = await channel.GetPublicArchivedThreadsAsync(before: before);
             if (allThreads.Count == 0) break;
             var threads = allThreads.Where(t =>
-                t.AppliedTags.Intersect(config.ResolvedTagIds).Any() &&
+                t.AppliedTags.Intersect(AppConfig.Data.ResolvedTagIds).Any() &&
                 !t.Name.StartsWith("!n")
             );
             if (threads.Count() == 0) break;
@@ -163,7 +163,10 @@ public class DataProcessor
         if (messages.First().Author.Id != owner) return "No description";
         
         StringBuilder combinedMessage = new();
-        var messageSequence = messages.Where(msg => !msg.Author.IsBot).TakeWhile(msg => msg.Author.Id == owner).Select(msg => msg.CleanContent);
+        var messageSequence = messages
+            .Where(msg => !msg.Author.IsBot)
+            .TakeWhile(msg => msg.Author.Id == owner)
+            .Select(msg => msg.CleanContent);
         combinedMessage.AppendJoin('\n', messageSequence);
         return combinedMessage.ToString();
     }
@@ -177,7 +180,10 @@ public class DataProcessor
     private string CombineAppliedTags(IForumChannel channel, IThreadChannel thread)
     {
         StringBuilder tagsString = new();
-        var tagList = channel.Tags.IntersectBy(thread.AppliedTags, tag => tag.Id).Select(tag => tag.Name);
+        var tagList = channel.Tags
+            .IntersectBy(thread.AppliedTags, tag => tag.Id)
+            .Where(tag => !AppConfig.Data.ResolvedTagIds.Any(id => id == tag.Id))
+            .Select(tag => tag.Name);
         tagsString.AppendJoin(", ", tagList);
 
         return tagsString.ToString();
