@@ -16,15 +16,13 @@ jobs:
       
       - name: Build bot
         run: dotnet publish
-
-      - name: show cwd
-        run: pwd
       
       - name: Create secrets files
         if: ${{ success() }}
         run: |
-          echo "${{ secrets.GH_AUTH }}" > /publish/secrets/github_auth
-          echo "${{ secrets.BOT_TOKEN }}" > /publish/secrets/bot_token
+          mkdir -p ./publish/secrets
+          echo "${{ secrets.GH_AUTH }}" > ./publish/secrets/github_auth
+          echo "${{ secrets.BOT_TOKEN }}" > ./publish/secrets/bot_token
 
       - name: Start program and update data
         if: ${{ success() }}
