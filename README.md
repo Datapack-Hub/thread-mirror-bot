@@ -2,6 +2,7 @@
 
 A bot for mirroring all help posts in the Datapack Hub Discord server to the Datapack Hub website.
 
+Use the `-auto` argument to automatically start an update and push process and the exit the program. 
 After starting the program, you can use write `help` in the console to get a list possible commands.
 
 ## Development
@@ -19,7 +20,7 @@ The github token is optional and only needed if generated data should be uploade
 ### Testing:<br>
 For quick tests in between run
 ```
-dotnet run [<token> | <path/to/token.txt>]
+dotnet run [<token> | <path/to/token.txt>] [-auto]
 ```
 
 ### Config:

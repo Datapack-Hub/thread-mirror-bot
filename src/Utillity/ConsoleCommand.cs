@@ -26,7 +26,7 @@ update                          Manually updates the help forum data.
 
 push                            Manually pushes help forum data to github.
 
-update-push                     Manually updates and pushes help forum data
+update-push                     Manually updates and pushes help forum data.
 
 stop-task <task name>           Stops the task with the given name.
 ");
@@ -57,7 +57,7 @@ stop-task <task name>           Stops the task with the given name.
         _ = Logger.Log("Config reload complete", LogSeverity.Info);
     }
 
-    public async Task Reauth(string[] input, DiscordSocketClient client, DiscordTokenmanager tokenManager)
+    public async Task Reauth(string[] input, DiscordSocketClient client, DiscordTokenManager tokenManager)
     {
         var token = input.Length == 3 ? input[2] : "";
         await client.Reconnect(tokenManager, token);

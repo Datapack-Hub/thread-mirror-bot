@@ -4,7 +4,7 @@ using Discord.WebSocket;
 
 public static class DiscordSocketClientExt
 {
-    public static async Task TryConnect(this DiscordSocketClient client, DiscordTokenmanager tokenManager, string tokenSource = "")
+    public static async Task TryConnect(this DiscordSocketClient client, DiscordTokenManager tokenManager, string tokenSource = "")
     {
         string token = await tokenManager.ParseTokenSource(tokenSource);
 
@@ -34,7 +34,7 @@ public static class DiscordSocketClientExt
         await client.StopAsync();
     }
 
-    public static async Task Reconnect(this DiscordSocketClient client, DiscordTokenmanager tokenManager, string token = "")
+    public static async Task Reconnect(this DiscordSocketClient client, DiscordTokenManager tokenManager, string token = "")
     {
         await client.Disconnect();
         await client.TryConnect(tokenManager, token);

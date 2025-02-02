@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Discord;
 
-public class DiscordTokenmanager
+public class DiscordTokenManager
 {
     private readonly string secretsDir = Path.Join(AppContext.BaseDirectory, "secrets");
 

@@ -1,0 +1,23 @@
+
+on:
+    schedule:
+        -  cron: '27 18 * * *'
+
+jobs:
+    update-help-post-data:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            
+            - name: Build DotNet
+              uses: Elskom/build-dotnet@v1.1.1
+            
+            - name: Create secrets files
+              run: |
+                echo {{ GH_AUTH }} > /publish/secrets/github_auth
+                echo {{ BOT_TOKEN }} > /publish/secrets/bot_token
+
+            - name: Start program and update data
+              run: |
+                ./publish/help-channel-mirror -auto

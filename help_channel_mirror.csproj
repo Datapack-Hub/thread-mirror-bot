@@ -4,8 +4,11 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <SelfContained>true</SelfContained> <!-- If true, includes the runtime -->
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract> 
+    <DebugType>none</DebugType>
+    <PublishDir>publish</PublishDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,12 +18,7 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
 
-    <Content Include="secrets/bot_token">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
-
-    <Content Include="secrets/github_auth">
+    <Content Include="secrets/*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>

@@ -4,3 +4,4 @@ obj/
 settings.json
 bot_token*
 github_auth*
+publish/

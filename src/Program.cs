@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 
 public class Program
 {
-    private static readonly DiscordTokenmanager tokenManager = new();
+    private static readonly DiscordTokenManager tokenManager = new();
     private readonly DiscordSocketClient client;
     private readonly ConnectionGuard connectionGuard;
     private readonly Github github;
@@ -25,12 +26,32 @@ public class Program
 
     public static async Task Main(string[] args)
     {
-        string token;
+        string token = null;
+        bool auto = false;
 
-        token = args.Length > 0 ? await tokenManager.ParseTokenSource(args[0]) : await tokenManager.ParseTokenSource();
+        if (args.Length > 0)
+        {
+            if (args.Length > 2)
+            {
+                _ = Logger.Log("Too many arguments", LogSeverity.Warning);
+                return;
+            }
+
+            auto = args.Contains("-auto");
+
+            if (auto && args.Length == 1) token = await tokenManager.ParseTokenSource();
+            else token = await tokenManager.ParseTokenSource(args.First(arg => arg != "-auto"));
+        }
+        else token = await tokenManager.ParseTokenSource();
 
         var program = await InitProgramAsync(token);
-        await program.RunAsync();
+        
+        if (auto)
+        {
+            ConsoleCommand cmd = new();
+            await cmd.UpdatePush(program.client, program.dataProcessor, program.github);
+        }
+        else await program.RunAsync();
     }
 
     private static async Task<Program> InitProgramAsync(string token)
@@ -216,7 +237,6 @@ public class Program
                 }
                 _ = cmd.Push(github);
                 break;
-
 
             case "update-push":
                 if (processedInput.Length > 1)
