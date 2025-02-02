@@ -29,4 +29,4 @@ jobs:
 
       - name: Start program and update data
         if: ${{ success() }}
-        run: ./publish/help-channel-mirror -auto
+        run: ./publish/help_channel_mirror -auto
