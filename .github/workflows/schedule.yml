@@ -24,7 +24,9 @@ jobs:
           echo "${{ secrets.GH_AUTH }}" > ./publish/secrets/github_auth
           echo "${{ secrets.BOT_TOKEN }}" > ./publish/secrets/bot_token
 
+      - name: Give execute permission
+        run: chmod u+x ./publish/help-channel-mirror
+
       - name: Start program and update data
         if: ${{ success() }}
-        run: |
-          ./publish/help-channel-mirror -auto
+        run: ./publish/help-channel-mirror -auto
