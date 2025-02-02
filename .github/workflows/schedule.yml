@@ -25,7 +25,7 @@ jobs:
           echo "${{ secrets.BOT_TOKEN }}" > ./publish/secrets/bot_token
 
       - name: Give execute permission
-        run: chmod u+x ./publish/help-channel-mirror
+        run: chmod u+x ./publish/help_channel_mirror
 
       - name: Start program and update data
         if: ${{ success() }}
