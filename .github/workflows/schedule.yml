@@ -2,7 +2,7 @@
 on:
   workflow_dispatch:
   schedule:
-    - cron: '38 17 * * *'
+    - cron: '4 18 * * *'
 
 jobs:
   update-help-post-data:
@@ -11,14 +11,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Build DotNet
+      - name: Set up .Net
         uses: Elskom/build-dotnet@v1.1.1
       
+      - name: Build bot
+        run: dotnet publish
+      
       - name: Create secrets files
+        if: ${{ success() }}
         run: |
-          echo {{ GH_AUTH }} > /publish/secrets/github_auth
-          echo {{ BOT_TOKEN }} > /publish/secrets/bot_token
+          echo ${{ secrets.GH_AUTH }} > ./publish/secrets/github_auth
+          echo ${{ secrets.BOT_TOKEN }} > ./publish/secrets/bot_token
 
       - name: Start program and update data
+        if: ${{ success() }}
         run: |
           ./publish/help-channel-mirror -auto
