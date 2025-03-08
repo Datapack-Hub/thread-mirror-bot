@@ -2,8 +2,8 @@
 
 A bot for mirroring all help posts in the Datapack Hub Discord server to the Datapack Hub website.
 
-Use the `-auto` argument to automatically start an update and push process and the exit the program. 
-After starting the program, you can use write `help` in the console to get a list possible commands.
+Use the `-auto` argument to automatically start an update and push process, then exit the program. 
+After starting the program, you can use `help` in the console to get a list possible commands.
 
 ## Development
 For Highlighting and debugging, download the `C# Dev Kit` extension pack.
