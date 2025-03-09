@@ -76,7 +76,7 @@ public class DataProcessor
 
     private async Task<List<HelpThread>> ProcessThreads(IForumChannel channel, IEnumerable<IThreadChannel> threads, CancellationToken cancellationToken)
     {
-        const int batchSize = 50;
+        const byte batchSize = 50;
         Stopwatch sw = new();
         List<HelpThread> processedThreads = new();
         _ = Logger.Log("Starting post processing.", LogSeverity.Info);
@@ -95,7 +95,7 @@ public class DataProcessor
                 (
                     thread.Id,
                     thread.Name,
-                    message != null ? message.CleanContent : "No description", // CombineOwnerMessageSequence(thread.OwnerId, message),
+                    message != null ? message.Content : "No description", // CombineOwnerMessageSequence(thread.OwnerId, message),
                     CombineAppliedTags(channel, thread),
                     message != null ? message.GetJumpUrl() : $"https://discord.com/channels/{channel.GuildId}/{channel.Id}/{thread.Id}"
                 );
