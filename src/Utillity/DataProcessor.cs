@@ -135,10 +135,7 @@ public class DataProcessor
 
             var allThreads = await channel.GetPublicArchivedThreadsAsync(before: before);
             if (allThreads.Count == 0) break;
-            var threads = allThreads.Where(t =>
-                t.AppliedTags.Intersect(AppConfig.Data.ResolvedTagIds).Any() &&
-                !t.Name.StartsWith("!n")
-            );
+            var threads = allThreads.Where(t => !t.Name.StartsWith("!n"));
             if (threads.Count() == 0) break;
 
             before = threads.Last().ArchiveTimestamp.DateTime;

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 
 public class Program
 {
@@ -26,6 +27,12 @@ public class Program
 
     public static async Task Main(string[] args)
     {
+        var dbOptions = new DbContextOptionsBuilder<DphContext>().UseSqlite($"Data Source={System.IO.Path.Join(AppContext.BaseDirectory, "data_storage.db")}").Options;
+        using (var db = new DphContext(dbOptions))
+        {
+            db.Database.EnsureCreated();
+        }
+
         string token = null;
         bool auto = false;
 
@@ -98,6 +105,8 @@ public class Program
 
     private async Task ConsoleLoopAsync()
     {
+        ConsoleCommand cmd = new();
+
         while (true)
         {
             #region Experimental Console
@@ -111,7 +120,7 @@ public class Program
             //         case ConsoleKey.Enter:
             //             goto break_input_loop;
             //             break;
-                    
+
             //         case ConsoleKey.Backspace:
             //             if (input.Length < 1) break;
             //             input = input[0..^1];
@@ -135,7 +144,7 @@ public class Program
 
             var input = Console.ReadLine();
 
-            if(await EvaluateInputAsync(input)) break;
+            if (await EvaluateInputAsync(cmd, input)) break;
         }
 
         _ = Logger.Log("Bot shutting down.", LogSeverity.Info);
@@ -147,12 +156,12 @@ public class Program
     /// </summary>
     /// <param name="input"></param>
     /// <returns>Should exit console loop</returns>
-    private async Task<bool> EvaluateInputAsync(string input)
+    private async Task<bool> EvaluateInputAsync(ConsoleCommand cmd, string input)
     {
-        ConsoleCommand cmd = new();
         string[] processedInput = input.Split(' ');
         bool shouldConsoleLoopExit = false;
 
+        // TODO Put the switch in the ConsoleCommand class
         switch (processedInput[0])
         {
             case "help":
@@ -179,7 +188,7 @@ public class Program
                     _ = Logger.Log("Too many arguments for this command!", LogSeverity.Error);
                     break;
                 }
-                shouldConsoleLoopExit = await cmd.Exit( client);
+                shouldConsoleLoopExit = await cmd.Exit(client);
                 break;
 
             case "reload-config":
@@ -196,8 +205,8 @@ public class Program
                 {
                     _ = Logger.Log("Too many arguments for this command!", LogSeverity.Error);
                     break;
-                } 
-                else if(processedInput.Length < 2)
+                }
+                else if (processedInput.Length < 2)
                 {
                     _ = Logger.Log("Too many arguments for this command!", LogSeverity.Error);
                     break;
@@ -257,7 +266,7 @@ public class Program
                 break;
 
             default:
-                invalid_input:
+            invalid_input:
                 Console.Write($"\x1b[1F\x1b[K\x1b[31m'{input}' is not a valid command.\x1b[0m\n");
                 break;
         }
